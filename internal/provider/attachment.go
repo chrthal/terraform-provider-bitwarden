@@ -7,36 +7,54 @@ import (
 	"errors"
 	"io"
 	"os"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/maxlaverse/terraform-provider-bitwarden/internal/bitwarden/bw"
 )
 
 func attachmentCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	itemId := d.Get(attributeAttachmentItemID).(string)
+    itemId := d.Get(attributeAttachmentItemID).(string)
 
-	existingAttachments, err := listExistingAttachments(ctx, meta.(bw.Client), itemId)
-	if err != nil {
-		return diag.FromErr(err)
-	}
+    existingAttachments, err := listExistingAttachments(ctx, meta.(bw.Client), itemId)
+    if err != nil {
+        return diag.FromErr(err)
+    }
 
-	filePath := d.Get(attributeAttachmentFile).(string)
-	obj, err := meta.(bw.Client).CreateAttachment(ctx, itemId, filePath)
-	if err != nil {
-		return diag.FromErr(err)
-	}
+    var filePath string
+    if v, ok := d.GetOk(attributeAttachmentContent); ok {
+        content := v.(string)
+        tmpfile, err := os.CreateTemp("", "attachment")
+        if err != nil {
+            return diag.FromErr(errors.New("unable to create temporary file"))
+        }
+        defer tmpfile.Close()
 
-	attachmentsRemoved, attachmentsAdded := compareLists(existingAttachments, obj.Attachments)
-	if len(attachmentsAdded) == 0 {
-		return diag.FromErr(errors.New("BUG: no attachment found after creation"))
-	} else if len(attachmentsAdded) > 1 {
-		return diag.FromErr(errors.New("BUG: more than one attachment created"))
-	} else if len(attachmentsRemoved) > 1 {
-		return diag.FromErr(errors.New("BUG: at least one attachment removed"))
-	}
+        if _, err := tmpfile.Write([]byte(content)); err != nil {
+            return diag.FromErr(errors.New("unable to write to temporary file"))
+        }
 
-	return diag.FromErr(attachmentDataFromStruct(d, attachmentsAdded[0]))
+        filePath = tmpfile.Name()
+    } else if v, ok := d.GetOk(attributeAttachmentFile); ok {
+        filePath = v.(string)
+    } else {
+        return diag.FromErr(errors.New("either attachmentFile or attachmentContent must be specified"))
+    }
+
+    obj, err := meta.(bw.Client).CreateAttachment(ctx, itemId, filePath)
+    if err != nil {
+        return diag.FromErr(err)
+    }
+
+    attachmentsRemoved, attachmentsAdded := compareLists(existingAttachments, obj.Attachments)
+    if len(attachmentsAdded) == 0 {
+        return diag.FromErr(errors.New("BUG: no attachment found after creation"))
+    } else if len(attachmentsAdded) > 1 {
+        return diag.FromErr(errors.New("BUG: more than one attachment created"))
+    } else if len(attachmentsRemoved) > 1 {
+        return diag.FromErr(errors.New("BUG: at least one attachment removed"))
+    }
+
+    return diag.FromErr(attachmentDataFromStruct(d, attachmentsAdded[0]))
 }
 
 func attachmentRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
