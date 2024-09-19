@@ -32,7 +32,7 @@ func TestAccDataSourceAttachment(t *testing.T) {
 			},
 			{
 				Config:      tfConfigProvider() + tfConfigResourceAttachmentWithoutFileOrContent(),
-				ExpectError: regexp.MustCompile("either attachmentFile or attachmentContent must be specified"),
+				ExpectError: regexp.MustCompile("Error: either attachmentFile or attachmentContent must be specified"),
 			},
 			{
 				Config: tfConfigProvider() + tfConfigResourceAttachmentWithContent(),
