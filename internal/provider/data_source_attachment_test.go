@@ -30,6 +30,16 @@ func TestAccDataSourceAttachment(t *testing.T) {
 				Config:      tfConfigProvider() + tfConfigResourceAttachment("fixtures/attachment1.txt") + tfConfigDataAttachmentInexistentItem(),
 				ExpectError: regexp.MustCompile("Error: object not found"),
 			},
+			{
+				Config:      tfConfigProvider() + tfConfigResourceAttachmentWithoutFileOrContent(),
+				ExpectError: regexp.MustCompile("either attachmentFile or attachmentContent must be specified"),
+			},
+			{
+				Config: tfConfigProvider() + tfConfigResourceAttachmentWithContent(),
+				Check: resource.TestMatchResourceAttr(
+					"bitwarden_attachment.foo", attributeAttachmentContent, regexp.MustCompile(`^This is a test content$`),
+				),
+			},
 		},
 	})
 }
@@ -37,10 +47,10 @@ func TestAccDataSourceAttachment(t *testing.T) {
 func tfConfigDataAttachment() string {
 	return `
 data "bitwarden_attachment" "foo_data" {
-	provider	= bitwarden
+    provider	= bitwarden
 
-	id 			= bitwarden_attachment.foo.id
-	item_id 	= bitwarden_attachment.foo.item_id
+    id 			= bitwarden_attachment.foo.id
+    item_id 	= bitwarden_attachment.foo.item_id
 }
 `
 }
@@ -48,10 +58,10 @@ data "bitwarden_attachment" "foo_data" {
 func tfConfigDataAttachmentInexistent() string {
 	return `
 data "bitwarden_attachment" "foo_data" {
-	provider	= bitwarden
+    provider	= bitwarden
 
-	id 			= 0123456789
-	item_id 	= bitwarden_attachment.foo.item_id
+    id 			= 0123456789
+    item_id 	= bitwarden_attachment.foo.item_id
 }
 `
 }
@@ -59,10 +69,31 @@ data "bitwarden_attachment" "foo_data" {
 func tfConfigDataAttachmentInexistentItem() string {
 	return `
 data "bitwarden_attachment" "foo_data" {
-	provider	= bitwarden
+    provider	= bitwarden
 
-	id 			= bitwarden_attachment.foo.id
-	item_id 	= 0123456789
+    id 			= bitwarden_attachment.foo.id
+    item_id 	= 0123456789
+}
+`
+}
+
+func tfConfigResourceAttachmentWithoutFileOrContent() string {
+	return `
+resource "bitwarden_attachment" "foo" {
+    provider	= bitwarden
+
+    item_id 	= 0123456789
+}
+`
+}
+
+func tfConfigResourceAttachmentWithContent() string {
+	return `
+resource "bitwarden_attachment" "foo" {
+    provider	= bitwarden
+
+    item_id 	= 0123456789
+    attachment_content = "This is a test content"
 }
 `
 }

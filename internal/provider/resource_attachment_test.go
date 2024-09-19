@@ -69,6 +69,18 @@ func TestAccResourceItemAttachmentFields(t *testing.T) {
 					checkAttachmentMatches(resourceName, "attachments.0."),
 				),
 			},
+			{
+				Config:      tfConfigProvider() + tfConfigResourceAttachmentWithoutFileOrContent(),
+				ExpectError: regexp.MustCompile("either attachmentFile or attachmentContent must be specified"),
+			},
+			{
+				Config: tfConfigProvider() + tfConfigResourceAttachmentWithContent(),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestMatchResourceAttr(
+						"bitwarden_attachment.foo", "attachment_content", regexp.MustCompile(`^This is a test content$`),
+					),
+				),
+			},
 		},
 	})
 }
@@ -208,16 +220,16 @@ func compareIdentifier(resourceName string, ID *string, expectChange bool) func(
 func tfConfigResourceAttachment(filepath string) string {
 	return `
 resource "bitwarden_item_login" "foo" {
-	provider = bitwarden
+    provider = bitwarden
 
-	name     = "foo"
+    name     = "foo"
 }
 
 resource "bitwarden_attachment" "foo" {
-	provider  = bitwarden
+    provider  = bitwarden
 
-	file      = "` + filepath + `"
-	item_id   = bitwarden_item_login.foo.id
+    file      = "` + filepath + `"
+    item_id   = bitwarden_item_login.foo.id
 }
 `
 }
