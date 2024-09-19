@@ -37,7 +37,7 @@ func TestAccDataSourceAttachment(t *testing.T) {
 			{
 				Config: tfConfigProvider() + tfConfigResourceAttachmentWithContent(),
 				Check: resource.TestMatchResourceAttr(
-					"bitwarden_attachment.foo", attributeAttachmentContent, regexp.MustCompile(`^This is a test content$`),
+					"data.bitwarden_attachment.foo_data", attributeAttachmentContent, regexp.MustCompile(`^Hello, I'm a text attachment$`),
 				),
 			},
 		},
@@ -93,7 +93,7 @@ resource "bitwarden_attachment" "foo" {
     provider	= bitwarden
 
     item_id 	= 0123456789
-    attachment_content = "This is a test content"
+    content 	= "Hello, I'm a text attachment"
 }
 `
 }
