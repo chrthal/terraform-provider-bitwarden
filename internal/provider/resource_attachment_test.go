@@ -71,7 +71,7 @@ func TestAccResourceItemAttachmentFields(t *testing.T) {
 			},
 			{
 				Config:      tfConfigProvider() + tfConfigResourceAttachmentWithoutFileOrContent(),
-				ExpectError: regexp.MustCompile("either attachmentFile or attachmentContent must be specified"),
+				ExpectError: regexp.MustCompile("Error: either file or content must be specified"),
 			},
 			{
 				Config: tfConfigProvider() + tfConfigResourceAttachmentWithContent(),
